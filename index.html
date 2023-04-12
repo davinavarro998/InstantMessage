@@ -200,7 +200,8 @@
             const contractInstance = new web3.eth.Contract(abi, address);
             const messages = await contractInstance.methods.readMyMessages().call({ from: accounts[0] });
 
-            contractInstance.events.MessageSent({}, (error, event) => {
+            contractInstance.events.MessageSent({}, async (error, event) => {
+                const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
                 if(accounts[0].toLowerCase() === event.returnValues[1].toLowerCase()){
                     console.log(accounts[0]);
                     console.log(event.returnValues[1]);
