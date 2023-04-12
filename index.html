@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Messages</h1>
+        <button id="connect-wallet-button">Connect Wallet</button>
+    </header>
+    <main>
+        <div class="box">
+            <input type="text" placeholder="address" id="input-address-box"/>
+            <input type="text" placeholder="your message" id="input-message-box"/>
+            <button id="send-message-button">Send Message</button>
+        </div>
+        <div class="box">
+            <p id="message-box"></p>
+        </div>
+    </main>
+    <footer>
+        <p>&copy;All rights reserved</p>
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.2.7/web3.min.js"
+        integrity="sha512-yAmmVkOXqtDZRaueLdmLwMB67JtaRtjFzQGiAiJKvLiFlDvq4Tzm5R6uLcOMyvPRQlXpYHdYxc5IbiCwuquhUw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        const web3 = new Web3(window.ethereum);
+        const correctNetworkId = 4002; //Fantom testnet
+        const connectWalletButton = document.getElementById("connect-wallet-button");
+        const inputAddressBox = document.getElementById("input-address-box");
+        const inputMessageBox = document.getElementById("input-message-box");
+        const sendMessageButton = document.getElementById("send-message-button");
+        const messageBox = document.getElementById("message-box");
+        const abi = [
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": false,
+                            "internalType": "address",
+                            "name": "from",
+                            "type": "address"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "address",
+                            "name": "to",
+                            "type": "address"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "string",
+                            "name": "content",
+                            "type": "string"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "uint256",
+                            "name": "timestamp",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "MessageSent",
+                    "type": "event"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "_to",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "string",
+                            "name": "_content",
+                            "type": "string"
+                        }
+                    ],
+                    "name": "sendMessage",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "readMyMessages",
+                    "outputs": [
+                        {
+                            "components": [
+                                {
+                                    "internalType": "string",
+                                    "name": "content",
+                                    "type": "string"
+                                },
+                                {
+                                    "internalType": "address",
+                                    "name": "author",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "timestamp",
+                                    "type": "uint256"
+                                }
+                            ],
+                            "internalType": "struct MessageSender.Message[]",
+                            "name": "",
+                            "type": "tuple[]"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function",
+                    "constant": true
+                }
+            ]
+        const address = "0xc9f71351f194770CAc91302bD59A214116253beF";
+
+        const ConnectWallet = async () => {
+                if (window.ethereum) {
+                    const currentNetworkId = await web3.eth.net.getId();
+                    if (currentNetworkId === correctNetworkId) {
+                        try {
+                            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                            return accounts[0];
+                        } catch (err) {
+                            throw new Error("There is an error!");
+                        }
+                    } else {
+                        alert("Please, connect to the right network");
+                        return false;
+                    }
+                } else {
+                    alert("Please, install Metamask!");
+                    return false;
+                }
+            }
+
+        connectWalletButton.addEventListener("click", () => {
+                ConnectWallet().then((result) => {
+                    connectWalletButton.textContent = result.slice(0, 5) + "..." + result.slice(35, -1);
+                }).catch((err) => {
+                    console.log(err);
+                });
+            });
+
+        document.addEventListener("DOMContentLoaded", async () => {
+                const result = await ConnectWallet();
+                if (result) {
+                    connectWalletButton.textContent = result.slice(0, 5) + "..." + result.slice(35, -1);
+                }
+                await readMessages();
+            });
+
+        window.ethereum.on("chainChanged", async () => {
+                const currentChainId = await web3.eth.net.getId();
+                if (currentChainId !== correctNetworkId) {
+                    alert("Please, switch to the right network!");
+                } else {
+                    await readMessages();
+                }
+            });
+
+        const sendMessage = async (to, message) => {
+                if (ConnectWallet()) {
+                    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                    const contractInstance = new web3.eth.Contract(abi, address);
+                    await contractInstance.methods.sendMessage(to, message).send({ from: accounts[0] });
+                    return true;
+                } else {
+                    alert("Connect wallet first!");
+                }
+            }
+
+        window.ethereum.on("accountsChanged", async () => {
+                const result = await ConnectWallet();
+                if (result) {
+                    connectWalletButton.textContent = result.slice(0, 5) + "..." + result.slice(35, -1);
+                    
+                }
+                await readMessages();
+            });
+        
+        sendMessageButton.addEventListener("click", ()=>{
+            const address = (inputAddressBox.value).trim();
+            const message = (inputMessageBox.value).trim();
+            sendMessage(address, message).then((result) => {
+                
+            }).catch((err) => {
+                
+            });
+        });
+
+        const readMessages = async () => {
+            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+            const contractInstance = new web3.eth.Contract(abi, address);
+            const messages = await contractInstance.methods.readMyMessages().call({ from: accounts[0] });
+
+            contractInstance.events.MessageSent({}, (error, event) => {
+                if(accounts[0].toLowerCase() === event.returnValues[1].toLowerCase()){
+                    console.log(accounts[0]);
+                    console.log(event.returnValues[1]);
+                    console.log(typeof (accounts[0]));
+                    console.log(typeof (event.returnValues[1]));
+                    alert("New message!");
+                }
+                
+            });
+
+            // Clear the message box before displaying new messages
+            messageBox.innerHTML = '';
+
+            // Display messages
+            messages.forEach((msg, index) => {
+                messageBox.innerHTML += `<p><strong>Message ${index + 1}:</strong> ${msg.content} <br> <small>From: ${msg.author} | Timestamp: ${new Date(msg.timestamp * 1000).toLocaleString()}</small></p>`;
+            });
+        };
+        
+        
+    </script>
+</body>
+</html>
