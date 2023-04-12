@@ -202,12 +202,17 @@
 
             contractInstance.events.MessageSent({}, async (error, event) => {
                 const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                const messages = await contractInstance.methods.readMyMessages().call({ from: accounts[0] });
                 if(accounts[0].toLowerCase() === event.returnValues[1].toLowerCase()){
+                    console.log(event);
                     console.log(accounts[0]);
                     console.log(event.returnValues[1]);
                     console.log(typeof (accounts[0]));
                     console.log(typeof (event.returnValues[1]));
-                    alert("New message!");
+                    
+                    messageBox.innerHTML += `<p><strong>Message:${Number(messages.length) + 1}</strong> ${event.returnValues.content} <br> <small>From: | Timestamp: </small></p>`;
+                    
+                    //alert(event.returnValues.content);
                 }
                 
             });
