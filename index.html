@@ -9,17 +9,20 @@
 </head>
 <body>
     <header>
-        <h1>Messages</h1>
+        <img src="https://tokenaim.com.br/logo.png" alt="logo">
         <button id="connect-wallet-button">Connect Wallet</button>
     </header>
     <main>
-        <div class="box">
+        <h1>Web3 Message Sender</h1>
+        <div class="container">
             <input type="text" placeholder="address" id="input-address-box"/>
             <input type="text" placeholder="your message" id="input-message-box"/>
             <button id="send-message-button">Send Message</button>
         </div>
-        <div class="box">
-            <p id="message-box"></p>
+        <div class="container">
+            <div class="message-container">
+                <p id="message-box" class="message-box"></p>
+            </div>
         </div>
     </main>
     <footer>
@@ -202,19 +205,17 @@
 
             contractInstance.events.MessageSent({}, async (error, event) => {
                 const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-                const messages = await contractInstance.methods.readMyMessages().call({ from: accounts[0] });
-                if(accounts[0].toLowerCase() === event.returnValues[1].toLowerCase()){
+                if(accounts[0].toLowerCase() === event.returnValues.to.toLowerCase()){
                     console.log(event);
                     console.log(accounts[0]);
                     console.log(event.returnValues[1]);
                     console.log(typeof (accounts[0]));
                     console.log(typeof (event.returnValues[1]));
                     
-                    messageBox.innerHTML += `<p><strong>Message:${Number(messages.length) + 1}</strong> ${event.returnValues.content} <br> <small>From: | Timestamp: </small></p>`;
+                    messageBox.innerHTML += `<p>${event.returnValues.content}</p>`;
                     
-                    //alert(event.returnValues.content);
+                    //alert("");
                 }
-                
             });
 
             // Clear the message box before displaying new messages
